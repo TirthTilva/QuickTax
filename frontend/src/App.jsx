@@ -1,20 +1,28 @@
-import Dashboard from "./pages/Dashboard";
-import "./App.css";
+// src/App.jsx
 
-export default function App() {
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import HomePage from './pages/HomePage';
+import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
+import Navbar from './components/Navbar';
+import Dashboard from './pages/Dashboard'
+
+function App() {
   return (
-    <div className="min-h-screen">
-      <header className="bg-white shadow">
-        <div className="mx-auto max-w-5xl px-4 py-4">
-          <h1 className="text-xl font-semibold">Income Tax Calculator (Old vs New)</h1>
-        </div>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <Dashboard />
+    <Router>
+      <Navbar />
+      <Toaster position="top-right" />
+      <main className="pt-20"> {/* Add padding to avoid content being hidden by navbar */}
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Routes>
       </main>
-      <footer className="text-center text-sm text-gray-500 py-6">
-        Phase 3 • MERN + Minimal UI
-      </footer>
-    </div>
+    </Router>
   );
 }
+
+export default App;

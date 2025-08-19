@@ -19,17 +19,20 @@ export function calculateTax(payload) {
 
   const taxableOld = Math.max(grossIncome - dedOld, 0);
   const taxOldBasic = oldRegimeSlabTax(taxableOld);
-  const taxOld = addHealthEducationCess(taxOldBasic);
+  const taxOldWithCess = addHealthEducationCess(taxOldBasic);
 
   // ----- NEW REGIME -----
-  // (No 80C/80D/Home-loan for self-occupied allowed here; standard deduction may apply to salaried,
-  // but keeping Phase-3 minimal; you can extend this later)
-  const taxableNew = Math.max(grossIncome, 0);
+  const taxableNew = Math.max(grossIncome, 0); // minimal deductions allowed
   const taxNewBasic = newRegimeSlabTax(taxableNew);
-  const taxNew = addHealthEducationCess(taxNewBasic);
+  const taxNewWithCess = addHealthEducationCess(taxNewBasic);
 
+  // ----- Suggestion -----
   const better =
-    taxOld < taxNew ? "Old Regime" : taxNew < taxOld ? "New Regime" : "Both equal";
+    taxOldWithCess < taxNewWithCess
+      ? "Old Regime"
+      : taxNewWithCess < taxOldWithCess
+      ? "New Regime"
+      : "Both equal";
 
   return {
     inputs: {
@@ -41,15 +44,22 @@ export function calculateTax(payload) {
       section80D: toNumber(section80D)
     },
     grossIncome,
-    oldRegime: { taxable: taxableOld, tax: round2(taxOld) },
-    newRegime: { taxable: taxableNew, tax: round2(taxNew) },
+    oldRegime: {
+      taxable: taxableOld,
+      tax: round2(taxOldWithCess),
+      totalTax: round2(taxOldWithCess) // explicit total field
+    },
+    newRegime: {
+      taxable: taxableNew,
+      tax: round2(taxNewWithCess),
+      totalTax: round2(taxNewWithCess) // explicit total field
+    },
     suggestion: better,
-    savings: round2(Math.abs(taxOld - taxNew))
+    savings: round2(Math.abs(taxOldWithCess - taxNewWithCess))
   };
 }
 
 /* ---------- Helpers ---------- */
-
 function sanitize(obj) {
   const clean = {};
   for (const k in obj) clean[k] = toNumber(obj[k]);
@@ -67,7 +77,6 @@ function addHealthEducationCess(tax) {
 }
 
 /* ---------- Slabs ---------- */
-
 // Old Regime slabs
 function oldRegimeSlabTax(income) {
   let tax = 0;
@@ -75,11 +84,10 @@ function oldRegimeSlabTax(income) {
   else if (income <= 500000) tax = (income - 250000) * 0.05;
   else if (income <= 1000000) tax = 12500 + (income - 500000) * 0.2;
   else tax = 112500 + (income - 1000000) * 0.3;
-  // Note: rebate u/s 87A not applied here; add later if needed
   return tax;
 }
 
-// New Regime slabs (Budget 2023 revised, continuing FY 2024-25)
+// New Regime slabs (Budget 2023 revised, FY 2024-25)
 function newRegimeSlabTax(income) {
   let tax = 0;
   if (income <= 300000) tax = 0;
@@ -88,7 +96,5 @@ function newRegimeSlabTax(income) {
   else if (income <= 1200000) tax = 50000 + (income - 1000000) * 0.15;
   else if (income <= 1500000) tax = 80000 + (income - 1200000) * 0.2;
   else tax = 140000 + (income - 1500000) * 0.3;
-
-  // Note: Rebate u/s 87A up to ₹7L total income can zero out tax—add in Phase-4 if you wish
   return tax;
 }
